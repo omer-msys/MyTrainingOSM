@@ -43,3 +43,24 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: #A3A3A3;
 }
+
+/* Toast entrance animation */
+@keyframes toastIn {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Focus rings — keyboard-only */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #E2231A;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selection */
+::selection {
+  background: #E2231A;
+  color: #fff;
+}

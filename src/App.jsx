@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
 import {
   LayoutDashboard, BookOpen, Cog, Plug, PlayCircle, AlertCircle,
   Bell, Search, ChevronRight, ChevronDown, ArrowRight, Check, X,
@@ -6,9 +6,10 @@ import {
   Upload, Filter, MoreHorizontal, ExternalLink, Sparkles,
   Eye, GitBranch, Server, Key, Lock, AlertTriangle, Plus,
   Brain, Cpu, Loader2, ChevronLeft, Calendar, TrendingUp,
-  FileCheck2, ScanLine, Workflow, Network,
+  FileCheck2, ScanLine, Workflow, Network, Star, Info,
   Bot, UserCog, ScrollText, Settings2, BarChart3, Pencil,
-  Power, History, Gauge, Code2, MessageSquare, Boxes
+  Power, History, Gauge, Code2, MessageSquare, Boxes, Download,
+  Mail, Phone, MapPin, Globe, Linkedin, Twitter
 } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────
@@ -18,6 +19,7 @@ import {
 const T = {
   red:        '#E2231A',
   redDark:    '#B81B14',
+  redDeep:    '#8E120D',
   redSoft:    '#FDECEB',
   redTint:    '#FFF6F5',
   ink:        '#0A0A0A',
@@ -35,7 +37,113 @@ const T = {
   warnSoft:   '#FEF3C7',
   bad:        '#B91C1C',
   badSoft:    '#FEE2E2',
+  // shadows
+  shadow:     '0 1px 2px rgba(10,10,10,0.04), 0 1px 3px rgba(10,10,10,0.04)',
+  shadowMd:   '0 4px 12px rgba(10,10,10,0.06), 0 2px 4px rgba(10,10,10,0.04)',
+  shadowLg:   '0 18px 40px rgba(10,10,10,0.10), 0 4px 10px rgba(10,10,10,0.05)',
+  // gradients
+  gradHero:   'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 55%, #2A0A09 100%)',
+  gradAccent: 'linear-gradient(135deg, #E2231A 0%, #B81B14 100%)',
 };
+
+// ───────────────────────────────────────────────────────────
+//  ADASTRA LOGO — stylized wordmark with "to the stars" mark
+// ───────────────────────────────────────────────────────────
+const AdastraLogo = ({ size = 28, color = T.ink, accent = T.red, withTag = false, tagColor }) => (
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, lineHeight: 1 }}>
+    {/* Star mark — "ad astra" = "to the stars" */}
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
+      <path
+        d="M16 2 L19.4 12.6 L30.4 12.6 L21.5 19.2 L24.9 29.8 L16 23.2 L7.1 29.8 L10.5 19.2 L1.6 12.6 L12.6 12.6 Z"
+        fill={accent}
+      />
+      <circle cx="16" cy="16" r="2.6" fill={color} />
+    </svg>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{
+        fontFamily: 'Instrument Serif, serif', fontSize: size * 0.95,
+        color, fontWeight: 400, letterSpacing: -0.5, lineHeight: 1,
+      }}>
+        ad<span style={{ color: accent, fontStyle: 'italic' }}>astra</span>
+      </span>
+      {withTag && (
+        <span style={{
+          fontFamily: 'Manrope, sans-serif', fontSize: 9, color: tagColor || T.muted,
+          letterSpacing: 2.5, fontWeight: 700, textTransform: 'uppercase',
+        }}>{withTag === true ? 'Audit Genie' : withTag}</span>
+      )}
+    </div>
+  </div>
+);
+
+// Compact logo — just the star mark
+const AdastraMark = ({ size = 20, color = T.red }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
+    <path
+      d="M16 2 L19.4 12.6 L30.4 12.6 L21.5 19.2 L24.9 29.8 L16 23.2 L7.1 29.8 L10.5 19.2 L1.6 12.6 L12.6 12.6 Z"
+      fill={color}
+    />
+  </svg>
+);
+
+// ───────────────────────────────────────────────────────────
+//  TOAST SYSTEM — global notifications for simulated actions
+// ───────────────────────────────────────────────────────────
+const ToastContext = createContext({ toast: () => {} });
+const useToast = () => useContext(ToastContext);
+
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const toast = useCallback((msg, opts = {}) => {
+    const id = Date.now() + Math.random();
+    const item = { id, msg, tone: opts.tone || 'info', icon: opts.icon, sub: opts.sub };
+    setToasts(t => [...t, item]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), opts.duration || 3800);
+  }, []);
+
+  const tones = {
+    info:    { bg: T.ink,     fg: T.paper, accent: T.red,  Icon: Info },
+    success: { bg: T.paper,   fg: T.ink,   accent: T.ok,   Icon: Check },
+    warn:    { bg: T.paper,   fg: T.ink,   accent: T.warn, Icon: AlertTriangle },
+    error:   { bg: T.paper,   fg: T.ink,   accent: T.bad,  Icon: AlertCircle },
+  };
+
+  return (
+    <ToastContext.Provider value={{ toast }}>
+      {children}
+      <div style={{
+        position: 'fixed', bottom: 24, right: 24, zIndex: 200,
+        display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none',
+      }}>
+        {toasts.map(t => {
+          const tone = tones[t.tone] || tones.info;
+          const ToneIcon = t.icon || tone.Icon;
+          return (
+            <div key={t.id} style={{
+              minWidth: 280, maxWidth: 420, padding: '12px 14px',
+              background: tone.bg, color: tone.fg, borderRadius: 6,
+              boxShadow: T.shadowLg, display: 'flex', gap: 10, alignItems: 'flex-start',
+              animation: 'toastIn 0.25s ease-out', pointerEvents: 'auto',
+              border: tone.bg === T.paper ? `1px solid ${T.rule}` : 'none',
+              fontFamily: 'Manrope, sans-serif',
+            }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', background: tone.accent,
+                color: T.paper, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <ToneIcon size={13} strokeWidth={2.5} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>{t.msg}</div>
+                {t.sub && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2, lineHeight: 1.4 }}>{t.sub}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </ToastContext.Provider>
+  );
+}
 
 // ───────────────────────────────────────────────────────────
 //  MOCK DATA
@@ -210,28 +318,26 @@ const NAV_SECTIONS = [
 ];
 
 function Sidebar({ page, setPage }) {
+  const { toast } = useToast();
   return (
     <aside style={{
-      width: 240, background: T.paper, borderRight: `1px solid ${T.rule}`,
+      width: 248, background: T.paper, borderRight: `1px solid ${T.rule}`,
       display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0,
+      boxShadow: '2px 0 12px rgba(10,10,10,0.02)',
     }}>
-      {/* Wordmark */}
-      <div style={{ padding: '24px 20px 28px', borderBottom: `1px solid ${T.ruleSoft}` }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{
-            fontFamily: 'Instrument Serif, serif', fontSize: 28, color: T.ink,
-            fontWeight: 400, letterSpacing: -0.5, lineHeight: 1,
-          }}>Adastra</span>
-          <span style={{
-            width: 4, height: 4, borderRadius: '50%', background: T.red,
-            display: 'inline-block', alignSelf: 'center', marginBottom: 2,
-          }} />
-        </div>
-        <div style={{
-          fontFamily: 'Manrope, sans-serif', fontSize: 10, color: T.muted,
-          letterSpacing: 2.5, marginTop: 4, fontWeight: 600, textTransform: 'uppercase',
-        }}>Audit Genie</div>
-      </div>
+      {/* Brand */}
+      <button
+        onClick={() => { setPage('dashboard'); }}
+        title="Go to dashboard"
+        style={{
+          padding: '22px 20px 22px', borderBottom: `1px solid ${T.ruleSoft}`,
+          background: 'none', border: 'none', borderBottomStyle: 'solid',
+          borderBottomColor: T.ruleSoft, borderBottomWidth: 1,
+          cursor: 'pointer', textAlign: 'left', width: '100%',
+        }}
+      >
+        <AdastraLogo size={26} withTag="Audit Genie" />
+      </button>
 
       {/* Nav */}
       <nav style={{ padding: '20px 12px', flex: 1, overflowY: 'auto' }}>
@@ -278,20 +384,49 @@ function Sidebar({ page, setPage }) {
         ))}
       </nav>
 
+      {/* What's new tile */}
+      <button
+        onClick={() => toast("Release notes opened", { sub: "v2.4 · DORA framework + 14 new rules", tone: 'info' })}
+        style={{
+          margin: '0 12px 12px', padding: '12px 14px', borderRadius: 6,
+          background: T.gradAccent, color: T.paper, border: 'none', cursor: 'pointer',
+          textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 4px 14px rgba(226,35,26,0.18)',
+        }}
+      >
+        <Sparkles size={16} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 11.5, letterSpacing: 0.3 }}>What's new · v2.4</div>
+          <div style={{ fontFamily: 'Manrope', fontSize: 10, opacity: 0.85, marginTop: 1 }}>DORA framework added</div>
+        </div>
+        <ChevronRight size={14} />
+      </button>
+
       {/* User */}
-      <div style={{ padding: '16px 20px', borderTop: `1px solid ${T.ruleSoft}` }}>
+      <button
+        onClick={() => toast("Profile menu opened", { sub: "Signed in as maya.chen@bank.com" })}
+        style={{
+          padding: '14px 20px', borderTop: `1px solid ${T.ruleSoft}`,
+          background: 'none', border: 'none', borderTopStyle: 'solid',
+          borderTopColor: T.ruleSoft, borderTopWidth: 1, cursor: 'pointer', textAlign: 'left', width: '100%',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = T.surface}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: '50%', background: T.ink,
+            width: 34, height: 34, borderRadius: '50%', background: T.gradAccent,
             color: T.paper, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontFamily: 'Manrope', fontWeight: 600,
+            fontSize: 12, fontFamily: 'Manrope', fontWeight: 700,
+            boxShadow: '0 2px 6px rgba(226,35,26,0.22)',
           }}>MC</div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, fontFamily: 'Manrope' }}>Maya Chen</div>
             <div style={{ fontSize: 11, color: T.muted, fontFamily: 'Manrope' }}>Sr. Auditor · Platform Admin</div>
           </div>
+          <ChevronDown size={13} color={T.muted} />
         </div>
-      </div>
+      </button>
     </aside>
   );
 }
@@ -350,11 +485,21 @@ const Button = ({ children, variant = 'primary', icon: Icon, onClick, size = 'md
   );
 };
 
-const Card = ({ children, padding = 24, style = {} }) => (
-  <div style={{
-    background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 6,
-    padding, ...style,
-  }}>{children}</div>
+const Card = ({ children, padding = 24, style = {}, hover = false, onClick }) => (
+  <div onClick={onClick} style={{
+    background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 8,
+    padding, boxShadow: T.shadow, transition: 'box-shadow 0.18s, transform 0.18s, border 0.18s',
+    cursor: onClick ? 'pointer' : 'default', ...style,
+  }}
+    onMouseEnter={hover || onClick ? e => {
+      e.currentTarget.style.boxShadow = T.shadowMd;
+      e.currentTarget.style.borderColor = '#D4D4D4';
+    } : undefined}
+    onMouseLeave={hover || onClick ? e => {
+      e.currentTarget.style.boxShadow = T.shadow;
+      e.currentTarget.style.borderColor = T.rule;
+    } : undefined}
+  >{children}</div>
 );
 
 const SectionHead = ({ children, action }) => (
@@ -371,36 +516,93 @@ const SectionHead = ({ children, action }) => (
 //  PAGE: DASHBOARD
 // ───────────────────────────────────────────────────────────
 function Dashboard({ goto }) {
+  const { toast } = useToast();
+  // Starfield positions — fixed so they don't reflow
+  const stars = [
+    { x: 12, y: 22, s: 1.5, o: 0.4 }, { x: 78, y: 14, s: 2,   o: 0.6 },
+    { x: 91, y: 38, s: 1,   o: 0.5 }, { x: 64, y: 72, s: 1.5, o: 0.3 },
+    { x: 86, y: 84, s: 2.5, o: 0.7 }, { x: 22, y: 88, s: 1,   o: 0.4 },
+    { x: 8,  y: 60, s: 1.2, o: 0.5 }, { x: 50, y: 12, s: 1,   o: 0.45 },
+    { x: 96, y: 60, s: 1.5, o: 0.5 }, { x: 30, y: 48, s: 1,   o: 0.3 },
+  ];
   return (
     <div style={{ padding: '32px 36px 60px', maxWidth: 1400 }}>
       {/* Hero strip */}
       <div style={{
-        marginBottom: 32, padding: '28px 32px', background: T.ink, color: T.paper,
-        borderRadius: 6, position: 'relative', overflow: 'hidden',
+        marginBottom: 32, padding: '32px 36px', background: T.gradHero, color: T.paper,
+        borderRadius: 10, position: 'relative', overflow: 'hidden',
+        boxShadow: '0 12px 36px rgba(10,10,10,0.18)',
       }}>
+        {/* Starfield */}
+        {stars.map((s, i) => (
+          <span key={i} style={{
+            position: 'absolute', left: `${s.x}%`, top: `${s.y}%`,
+            width: s.s, height: s.s, borderRadius: '50%', background: T.paper,
+            opacity: s.o, boxShadow: `0 0 ${s.s * 3}px rgba(255,255,255,${s.o})`,
+            animation: `twinkle ${3 + (i % 4)}s ease-in-out ${i * 0.3}s infinite`,
+          }} />
+        ))}
+        {/* Red glow corners */}
         <div style={{
-          position: 'absolute', right: -40, top: -40, width: 220, height: 220,
-          background: `radial-gradient(circle, ${T.red}22 0%, transparent 70%)`,
+          position: 'absolute', right: -60, top: -60, width: 280, height: 280,
+          background: `radial-gradient(circle, ${T.red}33 0%, transparent 70%)`, pointerEvents: 'none',
         }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{
+          position: 'absolute', left: -80, bottom: -120, width: 320, height: 320,
+          background: `radial-gradient(circle, ${T.red}1A 0%, transparent 60%)`, pointerEvents: 'none',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Brand line at top of hero */}
+            <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <AdastraLogo size={22} color={T.paper} accent={T.red} />
+              <span style={{
+                padding: '2px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 3, fontSize: 9.5, color: T.paper, fontWeight: 700, fontFamily: 'Manrope',
+                letterSpacing: 1.5,
+              }}>AUDIT GENIE · v2.4</span>
+            </div>
+            <div style={{
+              fontSize: 10, letterSpacing: 2.5, color: T.red, fontWeight: 700,
+              fontFamily: 'Manrope', marginBottom: 10,
+            }}>WELCOME BACK, MAYA</div>
+            <div style={{
+              fontFamily: 'Instrument Serif', fontSize: 32, lineHeight: 1.25,
+              fontWeight: 400, letterSpacing: -0.6, maxWidth: 680, marginBottom: 18,
+            }}>You have <em style={{ color: T.red, fontStyle: 'italic' }}>3 findings</em> awaiting review and <em style={{ color: T.red, fontStyle: 'italic' }}>1 audit</em> ready to close.</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button onClick={() => goto('findings')} style={{
+                background: T.gradAccent, color: T.paper, border: 'none', padding: '10px 16px',
+                fontSize: 12.5, fontWeight: 700, fontFamily: 'Manrope', cursor: 'pointer',
+                borderRadius: 5, display: 'inline-flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 4px 14px rgba(226,35,26,0.4)', letterSpacing: 0.2,
+              }}>Review findings <ArrowRight size={13} /></button>
+              <button onClick={() => goto('audits')} style={{
+                background: 'rgba(255,255,255,0.08)', color: T.paper,
+                border: '1px solid rgba(255,255,255,0.25)', padding: '10px 16px',
+                fontSize: 12.5, fontWeight: 600, fontFamily: 'Manrope', cursor: 'pointer', borderRadius: 5,
+                backdropFilter: 'blur(8px)',
+              }}>View all audits</button>
+              <button onClick={() => toast('Quick action: New audit', { sub: 'Launching audit wizard…' })} style={{
+                background: 'transparent', color: 'rgba(255,255,255,0.7)',
+                border: 'none', padding: '10px 8px',
+                fontSize: 12, fontWeight: 500, fontFamily: 'Manrope', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+              }}><Plus size={13} /> Launch new audit</button>
+            </div>
+          </div>
+          {/* Right side decorative — large mark */}
           <div style={{
-            fontSize: 10, letterSpacing: 2.5, color: T.red, fontWeight: 700,
-            fontFamily: 'Manrope', marginBottom: 8,
-          }}>WELCOME BACK, MAYA</div>
-          <div style={{
-            fontFamily: 'Instrument Serif', fontSize: 28, lineHeight: 1.2,
-            fontWeight: 400, letterSpacing: -0.5, maxWidth: 700, marginBottom: 12,
-          }}>You have <em style={{ color: T.red, fontStyle: 'italic' }}>3 findings</em> awaiting review and <em style={{ color: T.red, fontStyle: 'italic' }}>1 audit</em> ready to close.</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => goto('findings')} style={{
-              background: T.red, color: T.paper, border: 'none', padding: '8px 14px',
-              fontSize: 12, fontWeight: 600, fontFamily: 'Manrope', cursor: 'pointer',
-              borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 6,
-            }}>Review findings <ArrowRight size={13} /></button>
-            <button onClick={() => goto('audits')} style={{
-              background: 'transparent', color: T.paper, border: `1px solid #444`, padding: '8px 14px',
-              fontSize: 12, fontWeight: 600, fontFamily: 'Manrope', cursor: 'pointer', borderRadius: 4,
-            }}>View all audits</button>
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            width: 120, height: 120, position: 'relative',
+          }}>
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: '50%',
+              background: `radial-gradient(circle, ${T.red}44 0%, transparent 70%)`,
+              animation: 'pulse 3s ease-in-out infinite',
+            }} />
+            <AdastraMark size={84} color={T.red} />
           </div>
         </div>
       </div>
@@ -500,7 +702,10 @@ function Dashboard({ goto }) {
         </Card>
       </div>
 
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
+      <style>{`
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes twinkle { 0%, 100% { opacity: var(--o, 0.5); transform: scale(1); } 50% { opacity: 0.95; transform: scale(1.4); } }
+      `}</style>
     </div>
   );
 }
@@ -509,8 +714,12 @@ function Dashboard({ goto }) {
 //  PAGE: KNOWLEDGE
 // ───────────────────────────────────────────────────────────
 function Knowledge() {
+  const { toast } = useToast();
   const [hoverId, setHoverId] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
   return (
     <div style={{ padding: '32px 36px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
@@ -551,8 +760,16 @@ function Knowledge() {
               fontFamily: 'Manrope', width: '100%', color: T.ink,
             }} />
           </div>
-          <Button variant="ghost" icon={Filter} size="sm">Type: All</Button>
-          <Button variant="ghost" icon={Filter} size="sm">Status: All</Button>
+          <Button variant="ghost" icon={Filter} size="sm" onClick={() => {
+            const next = { All: 'Standard', Standard: 'Regulation', Regulation: 'Policy', Policy: 'Framework', Framework: 'All' }[typeFilter];
+            setTypeFilter(next);
+            toast(`Filtering by type: ${next}`);
+          }}>Type: {typeFilter}</Button>
+          <Button variant="ghost" icon={Filter} size="sm" onClick={() => {
+            const next = { All: 'Indexed', Indexed: 'Processing', Processing: 'All' }[statusFilter];
+            setStatusFilter(next);
+            toast(`Filtering by status: ${next}`);
+          }}>Status: {statusFilter}</Button>
         </div>
 
         <div style={{
@@ -564,10 +781,13 @@ function Knowledge() {
           <span>Document</span><span>Type</span><span>Pages</span><span>Ingested</span><span>Rules</span><span>Status</span><span></span>
         </div>
 
-        {KNOWLEDGE.map((k, i) => (
-          <div key={k.id} onMouseEnter={() => setHoverId(k.id)} onMouseLeave={() => setHoverId(null)} style={{
+        {KNOWLEDGE
+          .filter(k => typeFilter === 'All' || k.type === typeFilter)
+          .filter(k => statusFilter === 'All' || k.status === statusFilter.toLowerCase())
+          .map((k, i, arr) => (
+          <div key={k.id} onClick={() => setSelectedDoc(k)} onMouseEnter={() => setHoverId(k.id)} onMouseLeave={() => setHoverId(null)} style={{
             display: 'grid', gridTemplateColumns: '1fr 130px 80px 130px 110px 90px 32px',
-            padding: '16px 24px', borderBottom: i < KNOWLEDGE.length - 1 ? `1px solid ${T.ruleSoft}` : 'none',
+            padding: '16px 24px', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none',
             alignItems: 'center', cursor: 'pointer',
             background: hoverId === k.id ? T.surface : T.paper, transition: 'background 0.12s', gap: 16,
           }}>
@@ -602,11 +822,67 @@ function Knowledge() {
       </Card>
 
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
+      {selectedDoc && <DocumentDrawer doc={selectedDoc} onClose={() => setSelectedDoc(null)} />}
+    </div>
+  );
+}
+
+function DocumentDrawer({ doc, onClose }) {
+  const { toast } = useToast();
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.4)', zIndex: 80, display: 'flex', justifyContent: 'flex-end' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 580, maxWidth: '94vw', background: T.paper, height: '100vh',
+        overflowY: 'auto', boxShadow: '-20px 0 50px rgba(0,0,0,0.15)',
+      }}>
+        <div style={{ padding: '24px 28px', borderBottom: `1px solid ${T.rule}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, color: T.red, letterSpacing: 2, fontWeight: 700, fontFamily: 'Manrope', marginBottom: 6 }}>{doc.type.toUpperCase()} · {doc.id}</div>
+            <div style={{ fontFamily: 'Instrument Serif', fontSize: 24, color: T.ink, letterSpacing: -0.5, lineHeight: 1.2 }}>{doc.title}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, marginLeft: 16 }}><X size={20} /></button>
+        </div>
+        <div style={{ padding: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+            {[['Pages', doc.pages], ['Ingested', doc.ingested], ['Rules generated', doc.rules]].map(([k, v]) => (
+              <div key={k} style={{ padding: '14px 16px', background: T.surface, borderRadius: 4 }}>
+                <div style={{ fontSize: 10, color: T.muted, letterSpacing: 1, fontWeight: 700, fontFamily: 'Manrope', textTransform: 'uppercase', marginBottom: 6 }}>{k}</div>
+                <div style={{ fontFamily: 'Instrument Serif', fontSize: 22, color: T.ink, letterSpacing: -0.4 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <SectionHead>Document outline</SectionHead>
+          <div style={{ border: `1px solid ${T.rule}`, borderRadius: 4, marginBottom: 24 }}>
+            {[
+              ['§1', 'Identify (ID)', '14 controls'],
+              ['§2', 'Protect (PR)', '24 controls'],
+              ['§3', 'Detect (DE)', '18 controls'],
+              ['§4', 'Respond (RS)', '17 controls'],
+              ['§5', 'Recover (RC)', '16 controls'],
+            ].map(([sec, name, sub], i, arr) => (
+              <div key={sec} style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: '40px 1fr 100px', alignItems: 'center', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none', cursor: 'pointer' }}
+                onClick={() => toast(`Opening section ${sec}: ${name}`)}
+                onMouseEnter={e => e.currentTarget.style.background = T.surface}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: T.red, fontWeight: 700 }}>{sec}</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>{name}</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 11, color: T.muted, textAlign: 'right' }}>{sub}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button icon={Download} onClick={() => toast('Document export queued', { sub: `${doc.title} → PDF`, tone: 'success' })}>Download</Button>
+            <Button variant="secondary" icon={Eye} onClick={() => toast('Opened source PDF viewer')}>View source</Button>
+            <Button variant="ghost" onClick={() => toast('Re-indexing started', { tone: 'info' })}>Re-index</Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function UploadModal({ onClose }) {
+  const { toast } = useToast();
   const [stage, setStage] = useState(0); // 0=upload, 1=parsing, 2=extracting, 3=done
   const [progress, setProgress] = useState(0);
 
@@ -728,7 +1004,7 @@ function UploadModal({ onClose }) {
 
         <div style={{ padding: '16px 28px', borderTop: `1px solid ${T.rule}`, display: 'flex', justifyContent: 'flex-end', gap: 10, background: T.surface }}>
           <Button variant="ghost" onClick={onClose}>{stage >= 3 ? 'Close' : 'Cancel'}</Button>
-          {stage >= 3 && <Button>Review rules</Button>}
+          {stage >= 3 && <Button onClick={() => { toast('Promoted 89 rules for auditor review', { tone: 'success' }); onClose(); }}>Review rules</Button>}
         </div>
       </div>
       <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -740,6 +1016,7 @@ function UploadModal({ onClose }) {
 //  PAGE: RULES
 // ───────────────────────────────────────────────────────────
 function Rules() {
+  const { toast } = useToast();
   const [selected, setSelected] = useState(null);
   return (
     <div style={{ padding: '32px 36px 60px' }}>
@@ -748,8 +1025,8 @@ function Rules() {
           Audit rules auto-generated from your knowledge library, plus rules you've authored manually. Each rule cites its source.
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="secondary" icon={Filter}>Filter</Button>
-          <Button icon={Plus}>Author rule</Button>
+          <Button variant="secondary" icon={Filter} onClick={() => toast('Filter panel opened')}>Filter</Button>
+          <Button icon={Plus} onClick={() => toast('Rule authoring wizard opened', { sub: 'Choose a framework to start from' })}>Author rule</Button>
         </div>
       </div>
 
@@ -789,6 +1066,7 @@ function Rules() {
 }
 
 function RuleDrawer({ rule, onClose }) {
+  const { toast } = useToast();
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.4)', zIndex: 80, display: 'flex', justifyContent: 'flex-end' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
@@ -841,7 +1119,7 @@ function RuleDrawer({ rule, onClose }) {
                   <span style={{ fontFamily: 'Manrope', fontSize: 11, color: T.red, fontWeight: 600 }}>{c.loc}</span>
                 </div>
                 <div style={{ fontFamily: 'Instrument Serif', fontSize: 13, color: T.ink2, fontStyle: 'italic', lineHeight: 1.55 }}>"{c.txt}"</div>
-                <button style={{ marginTop: 6, background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <button onClick={() => toast(`Opening ${c.src} · ${c.loc}`, { sub: 'Jumping to cited passage…' })} style={{ marginTop: 6, background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                   View in document <ExternalLink size={11} />
                 </button>
               </div>
@@ -856,9 +1134,9 @@ function RuleDrawer({ rule, onClose }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button>Run now</Button>
-            <Button variant="secondary">Edit rule</Button>
-            <Button variant="ghost">Disable</Button>
+            <Button onClick={() => toast(`Rule ${rule.id} dispatched`, { sub: 'Rule Executor agent picked it up', tone: 'success' })}>Run now</Button>
+            <Button variant="secondary" onClick={() => toast(`Editing ${rule.id}`, { sub: 'Opening rule logic editor' })}>Edit rule</Button>
+            <Button variant="ghost" onClick={() => { toast(`Rule ${rule.id} disabled`, { tone: 'warn' }); onClose(); }}>Disable</Button>
           </div>
         </div>
       </div>
@@ -870,6 +1148,8 @@ function RuleDrawer({ rule, onClose }) {
 //  PAGE: CONNECTORS
 // ───────────────────────────────────────────────────────────
 function Connectors() {
+  const { toast } = useToast();
+  const [selected, setSelected] = useState(null);
   const grouped = CONNECTORS.reduce((acc, c) => {
     (acc[c.cat] = acc[c.cat] || []).push(c);
     return acc;
@@ -889,13 +1169,21 @@ function Connectors() {
           }>{cat}</SectionHead>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
             {items.map(c => (
-              <div key={c.name} style={{
-                padding: 18, border: `1px solid ${T.rule}`, borderRadius: 6,
+              <div key={c.name} onClick={() => {
+                if (c.status === 'available') {
+                  toast(`Connecting to ${c.name}…`, { sub: 'OAuth flow initiated', tone: 'info' });
+                  setTimeout(() => toast(`${c.name} connected`, { tone: 'success' }), 1200);
+                } else {
+                  setSelected(c);
+                }
+              }} style={{
+                padding: 18, border: `1px solid ${T.rule}`, borderRadius: 8,
                 background: T.paper, display: 'flex', alignItems: 'center', gap: 14,
-                cursor: 'pointer', transition: 'border 0.12s, transform 0.12s',
+                cursor: 'pointer', transition: 'border 0.12s, transform 0.12s, box-shadow 0.12s',
+                boxShadow: T.shadow,
               }}
-                onMouseEnter={e => { e.currentTarget.style.border = `1px solid ${T.ink}`; }}
-                onMouseLeave={e => { e.currentTarget.style.border = `1px solid ${T.rule}`; }}>
+                onMouseEnter={e => { e.currentTarget.style.border = `1px solid ${T.ink}`; e.currentTarget.style.boxShadow = T.shadowMd; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.border = `1px solid ${T.rule}`; e.currentTarget.style.boxShadow = T.shadow; e.currentTarget.style.transform = 'translateY(0)'; }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 6, background: c.color,
                   color: T.paper, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -912,6 +1200,65 @@ function Connectors() {
           </div>
         </div>
       ))}
+      {selected && <ConnectorDrawer conn={selected} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+function ConnectorDrawer({ conn, onClose }) {
+  const { toast } = useToast();
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.4)', zIndex: 80, display: 'flex', justifyContent: 'flex-end' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 540, maxWidth: '94vw', background: T.paper, height: '100vh',
+        overflowY: 'auto', boxShadow: '-20px 0 50px rgba(0,0,0,0.15)',
+      }}>
+        <div style={{ padding: '24px 28px', borderBottom: `1px solid ${T.rule}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 8, background: conn.color, color: T.paper,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'Manrope', fontWeight: 700, fontSize: 15,
+              }}>{conn.icon}</div>
+              <div>
+                <div style={{ fontSize: 10, color: T.red, letterSpacing: 2, fontWeight: 700, fontFamily: 'Manrope', marginBottom: 4 }}>CONNECTOR · {conn.cat.toUpperCase()}</div>
+                <div style={{ fontFamily: 'Instrument Serif', fontSize: 24, color: T.ink, letterSpacing: -0.5 }}>{conn.name}</div>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted }}><X size={20} /></button>
+          </div>
+          <StatusPill status={conn.status} />
+        </div>
+        <div style={{ padding: 28 }}>
+          <SectionHead>Connection</SectionHead>
+          <div style={{ border: `1px solid ${T.rule}`, borderRadius: 4, marginBottom: 24 }}>
+            {[
+              ['Auth method', 'OAuth 2.0 + service account'],
+              ['Last sync',   '2 min ago'],
+              ['Frequency',   'Real-time + 5 min poll'],
+              ['Scope',       'Read-only · 14 endpoints'],
+              ['Owner',       'Maya Chen'],
+            ].map(([k, v], i, arr) => (
+              <div key={k} style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: '140px 1fr', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+                <span style={{ fontFamily: 'Manrope', fontSize: 12, color: T.muted }}>{k}</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.ink }}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <SectionHead>Used by</SectionHead>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 24 }}>
+            {['Evidence Collector', 'Rule Executor', 'Anomaly Detector'].map(a => (
+              <Badge key={a} tone="neutral" size="xs">{a}</Badge>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button onClick={() => toast(`Sync triggered for ${conn.name}`, { tone: 'success' })}>Sync now</Button>
+            <Button variant="secondary" onClick={() => toast('Connector settings opened')}>Configure</Button>
+            <Button variant="ghost" onClick={() => { toast(`${conn.name} disconnected`, { tone: 'warn' }); onClose(); }}>Disconnect</Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -920,6 +1267,7 @@ function Connectors() {
 //  PAGE: AUDITS LIST
 // ───────────────────────────────────────────────────────────
 function Audits({ goto }) {
+  const { toast } = useToast();
   return (
     <div style={{ padding: '32px 36px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
@@ -927,8 +1275,8 @@ function Audits({ goto }) {
           All audits running across the platform. Trigger one manually or let continuous monitoring fire them on events.
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="secondary" icon={Calendar}>Schedule</Button>
-          <Button icon={PlayCircle}>Run audit</Button>
+          <Button variant="secondary" icon={Calendar} onClick={() => toast('Schedule audit', { sub: 'Calendar picker opened' })}>Schedule</Button>
+          <Button icon={PlayCircle} onClick={() => toast('Audit wizard opened', { sub: 'Choose framework + scope to begin', tone: 'info' })}>Run audit</Button>
         </div>
       </div>
 
@@ -967,6 +1315,7 @@ function Audits({ goto }) {
 //  PAGE: AUDIT DETAIL (live execution)
 // ───────────────────────────────────────────────────────────
 function AuditDetail({ goto }) {
+  const { toast } = useToast();
   const [eventCount, setEventCount] = useState(7);
   useEffect(() => {
     const id = setInterval(() => {
@@ -999,8 +1348,8 @@ function AuditDetail({ goto }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="secondary">Pause</Button>
-          <Button variant="ghost">Abort</Button>
+          <Button variant="secondary" onClick={() => toast('Audit paused', { sub: 'All agents acknowledged', tone: 'warn' })}>Pause</Button>
+          <Button variant="ghost" onClick={() => toast('Audit aborted', { sub: 'Partial workpapers saved', tone: 'error' })}>Abort</Button>
         </div>
       </div>
 
@@ -1087,7 +1436,9 @@ function AuditDetail({ goto }) {
               { n: 'Narrative Drafter', i: 'ND', c: T.red,    s: 'running' },
               { n: 'Citation Validator',i: 'CV', c: T.warn,   s: 'queued'  },
             ].map((a, i, arr) => (
-              <div key={a.n} style={{ padding: '12px 20px', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div key={a.n} onClick={() => goto('admin-agents')} style={{ padding: '12px 20px', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'background 0.12s' }}
+                onMouseEnter={e => e.currentTarget.style.background = T.surface}
+                onMouseLeave={e => e.currentTarget.style.background = T.paper}>
                 <div style={{ width: 32, height: 32, borderRadius: 4, background: a.c, color: T.paper, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Manrope', fontWeight: 700, fontSize: 11 }}>{a.i}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.ink, fontWeight: 600 }}>{a.n}</div>
@@ -1103,7 +1454,7 @@ function AuditDetail({ goto }) {
           <Card padding={20}>
             <SectionHead>New findings</SectionHead>
             {FINDINGS.slice(0, 2).map((f, i, arr) => (
-              <div key={f.id} style={{ padding: '12px 0', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+              <div key={f.id} onClick={() => goto('findings')} style={{ padding: '12px 0', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <SevDot sev={f.severity} />
                   <div style={{ flex: 1 }}>
@@ -1177,6 +1528,7 @@ function Findings() {
 }
 
 function FindingDrawer({ finding, onClose }) {
+  const { toast } = useToast();
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.4)', zIndex: 80, display: 'flex', justifyContent: 'flex-end' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ width: 640, maxWidth: '94vw', background: T.paper, height: '100vh', overflowY: 'auto', boxShadow: '-20px 0 50px rgba(0,0,0,0.15)' }}>
@@ -1229,7 +1581,7 @@ function FindingDrawer({ finding, onClose }) {
                   <span style={{ fontFamily: 'ui-monospace, "SF Mono", monospace', fontSize: 11, color: T.muted }}>{c.loc}</span>
                 </div>
                 <div style={{ fontSize: 11.5, color: T.ink3, fontFamily: 'Manrope', marginBottom: 6 }}>{c.hint}</div>
-                <button style={{ background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <button onClick={() => toast(`Opening ${c.title}`, { sub: c.loc })} style={{ background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                   View source <ExternalLink size={11} />
                 </button>
               </div>
@@ -1247,9 +1599,9 @@ function FindingDrawer({ finding, onClose }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button>Open ticket in Jira</Button>
-            <Button variant="secondary">Mark in remediation</Button>
-            <Button variant="ghost">Dismiss</Button>
+            <Button onClick={() => toast('Jira ticket created: SEC-4421', { sub: 'Assigned to CloudOps · due in 24h', tone: 'success' })}>Open ticket in Jira</Button>
+            <Button variant="secondary" onClick={() => { toast(`${finding.id} marked in remediation`, { tone: 'warn' }); onClose(); }}>Mark in remediation</Button>
+            <Button variant="ghost" onClick={() => { toast(`${finding.id} dismissed`, { sub: 'Reason required in workpaper' }); onClose(); }}>Dismiss</Button>
           </div>
         </div>
       </div>
@@ -1261,13 +1613,14 @@ function FindingDrawer({ finding, onClose }) {
 //  PAGE: MONITORING
 // ───────────────────────────────────────────────────────────
 function Monitoring() {
+  const { toast } = useToast();
   return (
     <div style={{ padding: '32px 36px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <p style={{ fontSize: 14, color: T.ink3, fontFamily: 'Manrope', maxWidth: 580, lineHeight: 1.55, margin: 0 }}>
           Always-on monitors react to events across the estate. When a monitor fires, the platform spins up an agent run automatically.
         </p>
-        <Button icon={Plus}>New monitor</Button>
+        <Button icon={Plus} onClick={() => toast('New monitor wizard opened', { sub: 'Choose scope and trigger' })}>New monitor</Button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20 }}>
@@ -1276,10 +1629,13 @@ function Monitoring() {
             <SectionHead>Active monitors</SectionHead>
           </div>
           {MONITORS.map((m, i) => (
-            <div key={m.name} style={{
+            <div key={m.name} onClick={() => toast(`Monitor: ${m.name}`, { sub: `Triggered ${m.alerts24h}× in last 24h · ${m.window}` })} style={{
               padding: '16px 24px', borderBottom: i < MONITORS.length - 1 ? `1px solid ${T.ruleSoft}` : 'none',
               display: 'grid', gridTemplateColumns: '1fr 90px 90px', gap: 16, alignItems: 'center',
-            }}>
+              cursor: 'pointer', transition: 'background 0.12s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = T.surface}
+              onMouseLeave={e => e.currentTarget.style.background = T.paper}>
               <div>
                 <div style={{ fontFamily: 'Manrope', fontSize: 13.5, color: T.ink, fontWeight: 600, marginBottom: 4 }}>{m.name}</div>
                 <div style={{ fontSize: 11.5, color: T.muted, fontFamily: 'Manrope' }}>
@@ -1311,7 +1667,9 @@ function Monitoring() {
             </span>
           </div>
           {MONITOR_EVENTS.map((e, i) => (
-            <div key={i} style={{ padding: '14px 24px', borderBottom: i < MONITOR_EVENTS.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+            <div key={i} onClick={() => toast(`Event: ${e.msg}`, { sub: `From ${e.monitor} at ${e.time}`, tone: e.sev === 'critical' ? 'error' : 'warn' })} style={{ padding: '14px 24px', borderBottom: i < MONITOR_EVENTS.length - 1 ? `1px solid ${T.ruleSoft}` : 'none', cursor: 'pointer', transition: 'background 0.12s' }}
+              onMouseEnter={el => el.currentTarget.style.background = T.surface}
+              onMouseLeave={el => el.currentTarget.style.background = T.paper}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <SevDot sev={e.sev} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1428,6 +1786,7 @@ const PLATFORM_LOG = [
 //  ADMIN PAGE: AI AGENTS
 // ───────────────────────────────────────────────────────────
 function AdminAgents() {
+  const { toast } = useToast();
   const [selected, setSelected] = useState(null);
   const healthy = AGENTS.filter(a => a.status === 'healthy').length;
   const totalRuns = AGENTS.reduce((s, a) => s + a.runs24h, 0);
@@ -1441,8 +1800,8 @@ function AdminAgents() {
           Every AI agent on the platform, with its configuration, model assignments, tool access, and live performance metrics. Click any agent for full configuration.
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="secondary" icon={History}>Run history</Button>
-          <Button icon={Plus}>Register agent</Button>
+          <Button variant="secondary" icon={History} onClick={() => toast('Run history opened', { sub: 'Last 1,247 invocations across all agents' })}>Run history</Button>
+          <Button icon={Plus} onClick={() => toast('Register new agent', { sub: 'Provide name, role, model + tool access', tone: 'info' })}>Register agent</Button>
         </div>
       </div>
 
@@ -1530,6 +1889,7 @@ function AdminAgents() {
 }
 
 function AgentDrawer({ agent, onClose }) {
+  const { toast } = useToast();
   const [tab, setTab] = useState('config');
   const tabs = [
     { id: 'config',  label: 'Configuration' },
@@ -1593,7 +1953,7 @@ function AgentDrawer({ agent, onClose }) {
                   <div key={k} style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: '160px 1fr 80px', alignItems: 'center', borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none', gap: 12 }}>
                     <span style={{ fontFamily: 'Manrope', fontSize: 12, color: T.muted }}>{k}</span>
                     <span style={{ fontFamily: 'ui-monospace, "SF Mono", monospace', fontSize: 12, color: T.ink }}>{v}</span>
-                    <button style={{ background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', justifySelf: 'end' }}>{action}</button>
+                    <button onClick={() => toast(`${action === 'view' ? 'Viewing' : action === 'change' ? 'Changing' : 'Editing'} ${k.toLowerCase()}`, { sub: String(v) })} style={{ background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', justifySelf: 'end' }}>{action}</button>
                   </div>
                 ))}
               </div>
@@ -1763,9 +2123,9 @@ function AgentDrawer({ agent, onClose }) {
 
         {/* Footer actions */}
         <div style={{ padding: '16px 28px', borderTop: `1px solid ${T.rule}`, background: T.surface, display: 'flex', gap: 10, justifyContent: 'flex-end', position: 'sticky', bottom: 0 }}>
-          <Button variant="ghost" icon={Power}>Pause agent</Button>
-          <Button variant="secondary" icon={History}>View all runs</Button>
-          <Button icon={Pencil}>Edit configuration</Button>
+          <Button variant="ghost" icon={Power} onClick={() => toast(`${agent.name} paused`, { tone: 'warn' })}>Pause agent</Button>
+          <Button variant="secondary" icon={History} onClick={() => toast(`Loading ${agent.runs24h} runs for ${agent.name}`)}>View all runs</Button>
+          <Button icon={Pencil} onClick={() => toast('Configuration editor opened', { sub: agent.name })}>Edit configuration</Button>
         </div>
       </div>
     </div>
@@ -1776,13 +2136,14 @@ function AgentDrawer({ agent, onClose }) {
 //  ADMIN PAGE: MODELS
 // ───────────────────────────────────────────────────────────
 function AdminModels() {
+  const { toast } = useToast();
   return (
     <div style={{ padding: '32px 36px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <p style={{ fontSize: 14, color: T.ink3, fontFamily: 'Manrope', maxWidth: 580, lineHeight: 1.55, margin: 0 }}>
           Approved models in the registry. Versioned, monitored for drift, and tracked for cost. Agents can only call models listed here.
         </p>
-        <Button icon={Plus}>Register model</Button>
+        <Button icon={Plus} onClick={() => toast('Register model', { sub: 'Requires AI committee approval', tone: 'info' })}>Register model</Button>
       </div>
 
       <Card padding={0}>
@@ -1790,7 +2151,7 @@ function AdminModels() {
           <span>Model</span><span>Provider</span><span>Tier</span><span>Status</span><span>Cost /1M tok</span><span>p50 latency</span><span>Used by</span><span>24h</span>
         </div>
         {MODELS.map((m, i) => (
-          <div key={m.name} style={{
+          <div key={m.name} onClick={() => toast(`Model: ${m.name}`, { sub: `${m.callsToday} calls today · ${m.tier}` })} style={{
             display: 'grid', gridTemplateColumns: '1fr 110px 160px 100px 130px 110px 90px 70px',
             padding: '16px 24px', borderBottom: i < MODELS.length - 1 ? `1px solid ${T.ruleSoft}` : 'none',
             alignItems: 'center', gap: 16, transition: 'background 0.12s', cursor: 'pointer',
@@ -1821,6 +2182,7 @@ function AdminModels() {
 //  ADMIN PAGE: PROMPTS
 // ───────────────────────────────────────────────────────────
 function AdminPrompts() {
+  const { toast } = useToast();
   const [selected, setSelected] = useState(null);
   return (
     <div style={{ padding: '32px 36px 60px' }}>
@@ -1828,7 +2190,7 @@ function AdminPrompts() {
         <p style={{ fontSize: 14, color: T.ink3, fontFamily: 'Manrope', maxWidth: 580, lineHeight: 1.55, margin: 0 }}>
           Versioned prompts under change control. Every promotion to production requires diff review and approval. No prompt edits in flight.
         </p>
-        <Button icon={Plus}>New prompt</Button>
+        <Button icon={Plus} onClick={() => toast('New prompt draft', { sub: 'Starts in sandbox · needs review to promote' })}>New prompt</Button>
       </div>
 
       <Card padding={0}>
@@ -1862,6 +2224,7 @@ function AdminPrompts() {
 }
 
 function PromptDrawer({ prompt, onClose }) {
+  const { toast } = useToast();
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.4)', zIndex: 80, display: 'flex', justifyContent: 'flex-end' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ width: 720, maxWidth: '96vw', background: T.paper, height: '100vh', overflowY: 'auto', boxShadow: '-20px 0 50px rgba(0,0,0,0.15)' }}>
@@ -1942,9 +2305,9 @@ A workpaper memo in markdown with sections:
           </div>
         </div>
         <div style={{ padding: '16px 28px', borderTop: `1px solid ${T.rule}`, background: T.surface, display: 'flex', gap: 10, justifyContent: 'flex-end', position: 'sticky', bottom: 0 }}>
-          <Button variant="ghost">Compare versions</Button>
-          <Button variant="secondary">Test in sandbox</Button>
-          <Button icon={Pencil}>Edit prompt</Button>
+          <Button variant="ghost" onClick={() => toast('Diff viewer opened', { sub: 'Showing v23 vs v22' })}>Compare versions</Button>
+          <Button variant="secondary" onClick={() => toast('Sandbox launched', { sub: 'Test with fixture finding F-1842' })}>Test in sandbox</Button>
+          <Button icon={Pencil} onClick={() => toast('Prompt editor opened', { sub: 'Edits require approval to promote', tone: 'info' })}>Edit prompt</Button>
         </div>
       </div>
     </div>
@@ -1955,13 +2318,14 @@ A workpaper memo in markdown with sections:
 //  ADMIN PAGE: USERS & ROLES
 // ───────────────────────────────────────────────────────────
 function AdminUsers() {
+  const { toast } = useToast();
   return (
     <div style={{ padding: '32px 36px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <p style={{ fontSize: 14, color: T.ink3, fontFamily: 'Manrope', maxWidth: 580, lineHeight: 1.55, margin: 0 }}>
           Platform users and their roles. Every action is logged; external auditors get read-only scoped access.
         </p>
-        <Button icon={Plus}>Invite user</Button>
+        <Button icon={Plus} onClick={() => toast('Invite user', { sub: 'Email + role + team scope required' })}>Invite user</Button>
       </div>
 
       {/* Roles legend */}
@@ -1995,14 +2359,14 @@ function AdminUsers() {
               fontFamily: 'Manrope', width: '100%', color: T.ink,
             }} />
           </div>
-          <Button variant="ghost" icon={Filter} size="sm">Role: All</Button>
+          <Button variant="ghost" icon={Filter} size="sm" onClick={() => toast('Role filter expanded')}>Role: All</Button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 160px 90px 110px', padding: '12px 24px', borderBottom: `1px solid ${T.ruleSoft}`, fontSize: 10, color: T.muted, letterSpacing: 1.5, fontWeight: 700, fontFamily: 'Manrope', textTransform: 'uppercase', gap: 16 }}>
           <span>User</span><span>Role</span><span>Teams</span><span>MFA</span><span>Last active</span>
         </div>
         {USERS.map((u, i) => (
-          <div key={u.email} style={{
+          <div key={u.email} onClick={() => toast(`${u.name} · ${u.role}`, { sub: `${u.email} · last active ${u.lastActive}` })} style={{
             display: 'grid', gridTemplateColumns: '1fr 140px 160px 90px 110px',
             padding: '14px 24px', borderBottom: i < USERS.length - 1 ? `1px solid ${T.ruleSoft}` : 'none',
             alignItems: 'center', gap: 16, transition: 'background 0.12s', cursor: 'pointer',
@@ -2039,6 +2403,7 @@ function AdminUsers() {
 //  ADMIN PAGE: AUDIT LOG (platform activity)
 // ───────────────────────────────────────────────────────────
 function AdminAuditLog() {
+  const { toast } = useToast();
   const catColors = { governance: T.red, config: T.warn, audit: T.ink, workflow: '#3B82F6', system: T.muted };
   return (
     <div style={{ padding: '32px 36px 60px' }}>
@@ -2071,7 +2436,7 @@ function AdminAuditLog() {
               <span style={{ fontFamily: 'Manrope', fontSize: 11.5, color: T.ink2 }}>{l}</span>
             </div>
           ))}
-          <Button variant="ghost" icon={ExternalLink} size="sm">Export</Button>
+          <Button variant="ghost" icon={Download} size="sm" onClick={() => toast('Audit log export queued', { sub: 'CSV will be emailed when ready', tone: 'success' })}>Export</Button>
         </div>
       </Card>
 
@@ -2088,7 +2453,7 @@ function AdminAuditLog() {
               <span style={{ fontFamily: 'Manrope', fontSize: 11, color: T.ink2, textTransform: 'capitalize' }}>{e.cat}</span>
             </div>
             <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.ink2 }}>{e.action}</span>
-            <button style={{ background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', justifySelf: 'end' }}>details →</button>
+            <button onClick={() => toast(`Log entry at ${e.t}`, { sub: `${e.actor} · ${e.cat}` })} style={{ background: 'none', border: 'none', color: T.red, fontSize: 11, fontFamily: 'Manrope', fontWeight: 600, cursor: 'pointer', justifySelf: 'end' }}>details →</button>
           </div>
         ))}
       </Card>
@@ -2100,11 +2465,24 @@ function AdminAuditLog() {
 //  ADMIN PAGE: SETTINGS
 // ───────────────────────────────────────────────────────────
 function AdminSettings() {
-  const Toggle = ({ on = true }) => (
-    <div style={{ width: 32, height: 18, background: on ? T.ok : T.rule, borderRadius: 9, position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('Organization');
+  const [toggles, setToggles] = useState({
+    'Require human approval for all material findings': true,
+    'Enforce citation on every AI output':                true,
+    'Auto-pause agent on quality regression':             true,
+    'Block model usage outside approved registry':        true,
+    'Quarterly second-line review':                       true,
+    'External auditor read-only portal':                   true,
+  });
+
+  const Toggle = ({ on = true, onClick }) => (
+    <div onClick={onClick} style={{ width: 32, height: 18, background: on ? T.ok : T.rule, borderRadius: 9, position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s' }}>
       <div style={{ width: 14, height: 14, background: T.paper, borderRadius: '50%', position: 'absolute', top: 2, left: on ? 16 : 2, transition: 'left 0.15s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
     </div>
   );
+
+  const tabs = ['Organization', 'Security', 'AI Governance', 'Integrations', 'Notifications', 'Data retention', 'Billing'];
 
   return (
     <div style={{ padding: '32px 36px 60px' }}>
@@ -2115,69 +2493,166 @@ function AdminSettings() {
       <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 32 }}>
         {/* Settings sub-nav */}
         <nav>
-          {['Organization', 'Security', 'AI Governance', 'Integrations', 'Notifications', 'Data retention', 'Billing'].map((s, i) => (
-            <button key={s} style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '10px 12px', border: 'none', background: i === 0 ? T.redTint : 'transparent',
-              color: i === 0 ? T.ink : T.ink3, fontSize: 13, fontWeight: i === 0 ? 600 : 500,
-              fontFamily: 'Manrope', cursor: 'pointer', borderRadius: 4, marginBottom: 2,
-              borderLeft: i === 0 ? `2px solid ${T.red}` : '2px solid transparent',
-            }}>{s}</button>
-          ))}
+          {tabs.map(s => {
+            const isActive = activeTab === s;
+            return (
+              <button key={s} onClick={() => setActiveTab(s)} style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '10px 12px', border: 'none', background: isActive ? T.redTint : 'transparent',
+                color: isActive ? T.ink : T.ink3, fontSize: 13, fontWeight: isActive ? 600 : 500,
+                fontFamily: 'Manrope', cursor: 'pointer', borderRadius: 4, marginBottom: 2,
+                borderLeft: isActive ? `2px solid ${T.red}` : '2px solid transparent',
+                transition: 'background 0.15s',
+              }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.surface; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              >{s}</button>
+            );
+          })}
         </nav>
 
         {/* Settings panel */}
         <div>
-          <SectionHead>Organization</SectionHead>
-          <Card padding={24} style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 18, alignItems: 'center' }}>
-              <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Organization name</span>
-              <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>Atlas Bank · Internal Audit</span>
-              <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Platform tier</span>
-              <Badge tone="red" size="xs">Enterprise — Tier 1 FS</Badge>
-              <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Region</span>
-              <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>us-east-1 (in-region processing only)</span>
-              <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Audit Committee contact</span>
-              <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>audit-committee@atlasbank.com</span>
-            </div>
-          </Card>
+          {activeTab === 'Organization' && (<>
+            <SectionHead>Organization</SectionHead>
+            <Card padding={24} style={{ marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 18, alignItems: 'center' }}>
+                <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Organization name</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>Atlas Bank · Internal Audit</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Platform tier</span>
+                <Badge tone="red" size="xs">Enterprise — Tier 1 FS</Badge>
+                <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Region</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>us-east-1 (in-region processing only)</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.muted }}>Audit Committee contact</span>
+                <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>audit-committee@atlasbank.com</span>
+              </div>
+            </Card>
+          </>)}
 
-          <SectionHead>Platform-wide AI governance</SectionHead>
-          <Card padding={0} style={{ marginBottom: 24 }}>
-            {[
-              ['Require human approval for all material findings', 'Every finding of severity High or above must be approved by a named auditor before issuance.', true],
-              ['Enforce citation on every AI output',                'AI claims without verifiable source citations are blocked at the output validator.',         true],
-              ['Auto-pause agent on quality regression',             'If success rate drops below 95% over a 1-hour window, agent is paused for review.',          true],
-              ['Block model usage outside approved registry',        'Agents may only call models in the Model Registry. New models require committee approval.', true],
-              ['Quarterly second-line review',                       'Independent quarterly review of agent decisions and prompt changes.',                       true],
-              ['External auditor read-only portal',                   'Provision scoped, read-only access for external auditor with reproducible reasoning.',     true],
-            ].map(([k, sub, on], i, arr) => (
-              <div key={k} style={{ padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 14, borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
-                <div style={{ marginTop: 2 }}><Toggle on={on} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 600 }}>{k}</div>
-                  <div style={{ fontSize: 11.5, color: T.muted, fontFamily: 'Manrope', marginTop: 3, lineHeight: 1.5 }}>{sub}</div>
+          {activeTab === 'AI Governance' && (<>
+            <SectionHead>Platform-wide AI governance</SectionHead>
+            <Card padding={0} style={{ marginBottom: 24 }}>
+              {[
+                ['Require human approval for all material findings', 'Every finding of severity High or above must be approved by a named auditor before issuance.'],
+                ['Enforce citation on every AI output',                'AI claims without verifiable source citations are blocked at the output validator.'],
+                ['Auto-pause agent on quality regression',             'If success rate drops below 95% over a 1-hour window, agent is paused for review.'],
+                ['Block model usage outside approved registry',        'Agents may only call models in the Model Registry. New models require committee approval.'],
+                ['Quarterly second-line review',                       'Independent quarterly review of agent decisions and prompt changes.'],
+                ['External auditor read-only portal',                   'Provision scoped, read-only access for external auditor with reproducible reasoning.'],
+              ].map(([k, sub], i, arr) => (
+                <div key={k} style={{ padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 14, borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+                  <div style={{ marginTop: 2 }}>
+                    <Toggle on={toggles[k]} onClick={() => {
+                      setToggles(t => ({ ...t, [k]: !t[k] }));
+                      toast(`${k} ${toggles[k] ? 'disabled' : 'enabled'}`, { tone: toggles[k] ? 'warn' : 'success' });
+                    }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 600 }}>{k}</div>
+                    <div style={{ fontSize: 11.5, color: T.muted, fontFamily: 'Manrope', marginTop: 3, lineHeight: 1.5 }}>{sub}</div>
+                  </div>
+                  <button onClick={() => toast(`Audit history: ${k}`)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', padding: 4 }}><MoreHorizontal size={14} /></button>
                 </div>
-                <button style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', padding: 4 }}><MoreHorizontal size={14} /></button>
-              </div>
-            ))}
-          </Card>
+              ))}
+            </Card>
+          </>)}
 
-          <SectionHead>Data retention</SectionHead>
-          <Card padding={0}>
-            {[
-              ['Audit workpapers',     '7 years',    'regulatory minimum'],
-              ['Evidence artifacts',   '7 years',    'aligned to workpapers'],
-              ['Agent execution logs', '90 days',    'rolling, then summarized'],
-              ['Platform audit log',   'Indefinite', 'immutable, exportable'],
-            ].map(([k, v, sub], i, arr) => (
-              <div key={k} style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: '220px 110px 1fr', alignItems: 'center', gap: 12, borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
-                <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>{k}</span>
-                <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.red, fontWeight: 600 }}>{v}</span>
-                <span style={{ fontFamily: 'Manrope', fontSize: 11.5, color: T.muted }}>{sub}</span>
+          {activeTab === 'Data retention' && (<>
+            <SectionHead>Data retention</SectionHead>
+            <Card padding={0}>
+              {[
+                ['Audit workpapers',     '7 years',    'regulatory minimum'],
+                ['Evidence artifacts',   '7 years',    'aligned to workpapers'],
+                ['Agent execution logs', '90 days',    'rolling, then summarized'],
+                ['Platform audit log',   'Indefinite', 'immutable, exportable'],
+              ].map(([k, v, sub], i, arr) => (
+                <div key={k} style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: '220px 110px 1fr', alignItems: 'center', gap: 12, borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+                  <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>{k}</span>
+                  <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.red, fontWeight: 600 }}>{v}</span>
+                  <span style={{ fontFamily: 'Manrope', fontSize: 11.5, color: T.muted }}>{sub}</span>
+                </div>
+              ))}
+            </Card>
+          </>)}
+
+          {activeTab === 'Security' && (<>
+            <SectionHead>Security</SectionHead>
+            <Card padding={0}>
+              {[
+                ['SSO provider',           'Okta',                           'configured'],
+                ['MFA enforcement',        'Required for all roles',         'enforced'],
+                ['Session timeout',        '8 hours',                        'idle'],
+                ['IP allowlist',           '10 networks',                    'active'],
+                ['API key rotation',       'Every 90 days',                  'auto'],
+              ].map(([k, v, sub], i, arr) => (
+                <div key={k} style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: '200px 1fr 110px', alignItems: 'center', gap: 12, borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+                  <span style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 500 }}>{k}</span>
+                  <span style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.ink2 }}>{v}</span>
+                  <Badge tone="ok" size="xs">{sub}</Badge>
+                </div>
+              ))}
+            </Card>
+          </>)}
+
+          {activeTab === 'Integrations' && (<>
+            <SectionHead>Outbound integrations</SectionHead>
+            <Card padding={20}>
+              <div style={{ fontFamily: 'Manrope', fontSize: 12.5, color: T.ink2, lineHeight: 1.6 }}>
+                Configure outbound webhooks, SIEM forwarding, and ticketing destinations.
               </div>
-            ))}
-          </Card>
+              <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['Jira · SEC project', 'ServiceNow · GRC', 'Splunk SIEM', 'Slack #audit-alerts', 'Email digests'].map(t => (
+                  <Badge key={t} tone="ok" size="xs">● {t}</Badge>
+                ))}
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <Button icon={Plus} onClick={() => toast('Add outbound integration')}>Add integration</Button>
+              </div>
+            </Card>
+          </>)}
+
+          {activeTab === 'Notifications' && (<>
+            <SectionHead>Notifications</SectionHead>
+            <Card padding={0}>
+              {[
+                ['Critical finding',     'Slack + email',     true],
+                ['High finding',         'Email',             true],
+                ['Audit complete',       'Email digest',      true],
+                ['Agent degraded',       'Slack + page',      true],
+                ['Weekly KPI digest',    'Email · Mondays',   true],
+              ].map(([k, v, on], i, arr) => (
+                <div key={k} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, borderBottom: i < arr.length - 1 ? `1px solid ${T.ruleSoft}` : 'none' }}>
+                  <Toggle on={on} onClick={() => toast(`${k} channel toggled`)} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'Manrope', fontSize: 13, color: T.ink, fontWeight: 600 }}>{k}</div>
+                    <div style={{ fontSize: 11.5, color: T.muted, fontFamily: 'Manrope', marginTop: 2 }}>{v}</div>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          </>)}
+
+          {activeTab === 'Billing' && (<>
+            <SectionHead>Billing</SectionHead>
+            <Card padding={24}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+                {[
+                  ['Plan',          'Enterprise',          T.red],
+                  ['Monthly spend', '$48,210',             T.ink],
+                  ['Next invoice',  'Jun 1, 2026',         T.ink2],
+                ].map(([k, v, c]) => (
+                  <div key={k}>
+                    <div style={{ fontSize: 10, color: T.muted, letterSpacing: 1.5, fontWeight: 700, fontFamily: 'Manrope', textTransform: 'uppercase', marginBottom: 6 }}>{k}</div>
+                    <div style={{ fontFamily: 'Instrument Serif', fontSize: 24, color: c, letterSpacing: -0.4 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button onClick={() => toast('Invoices downloaded', { tone: 'success' })} icon={Download}>Download invoices</Button>
+                <Button variant="secondary" onClick={() => toast('Billing contact opened')}>Manage</Button>
+              </div>
+            </Card>
+          </>)}
         </div>
       </div>
     </div>
@@ -2185,9 +2660,155 @@ function AdminSettings() {
 }
 
 // ───────────────────────────────────────────────────────────
+//  FOOTER
+// ───────────────────────────────────────────────────────────
+function Footer({ goto }) {
+  const { toast } = useToast();
+  const linkStyle = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    color: T.muted, fontFamily: 'Manrope', fontSize: 11.5,
+    padding: '4px 0', textAlign: 'left', transition: 'color 0.15s',
+  };
+  return (
+    <footer style={{
+      marginTop: 60, borderTop: `1px solid ${T.rule}`,
+      background: T.paper, padding: '40px 36px 28px',
+    }}>
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1.1fr',
+        gap: 32, maxWidth: 1400, marginBottom: 32,
+      }}>
+        {/* Brand column */}
+        <div>
+          <AdastraLogo size={24} withTag="Audit Genie" />
+          <p style={{
+            fontFamily: 'Manrope', fontSize: 12, color: T.ink3, lineHeight: 1.6,
+            marginTop: 14, maxWidth: 260,
+          }}>
+            AI-powered audit automation for Tier-1 Financial Services. Continuous, agentic assurance from policy to finding.
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            {[Linkedin, Twitter, Globe, Mail].map((Ic, i) => (
+              <button key={i} onClick={() => toast(['LinkedIn','Twitter/X','Website','Contact us'][i])} style={{
+                width: 30, height: 30, border: `1px solid ${T.rule}`, borderRadius: 5,
+                background: T.paper, cursor: 'pointer', color: T.ink3,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'border 0.15s, color 0.15s, background 0.15s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = T.ink; e.currentTarget.style.color = T.paper; e.currentTarget.style.borderColor = T.ink; }}
+                onMouseLeave={e => { e.currentTarget.style.background = T.paper; e.currentTarget.style.color = T.ink3; e.currentTarget.style.borderColor = T.rule; }}
+              ><Ic size={13} /></button>
+            ))}
+          </div>
+        </div>
+
+        {/* Product */}
+        <div>
+          <div style={{ fontFamily: 'Manrope', fontSize: 10, color: T.ink, letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Product</div>
+          {[
+            ['Dashboard', 'dashboard'], ['Audits', 'audits'], ['Findings', 'findings'],
+            ['Continuous Monitor', 'monitoring'], ['Knowledge', 'knowledge'], ['Rules', 'rules'],
+          ].map(([label, id]) => (
+            <button key={id} onClick={() => goto(id)} style={linkStyle}
+              onMouseEnter={e => e.currentTarget.style.color = T.red}
+              onMouseLeave={e => e.currentTarget.style.color = T.muted}>
+              <div>{label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Admin */}
+        <div>
+          <div style={{ fontFamily: 'Manrope', fontSize: 10, color: T.ink, letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Admin</div>
+          {[
+            ['AI Agents', 'admin-agents'], ['Models', 'admin-models'], ['Prompts', 'admin-prompts'],
+            ['Users & Roles', 'admin-users'], ['Audit Log', 'admin-auditlog'], ['Settings', 'admin-settings'],
+          ].map(([label, id]) => (
+            <button key={id} onClick={() => goto(id)} style={linkStyle}
+              onMouseEnter={e => e.currentTarget.style.color = T.red}
+              onMouseLeave={e => e.currentTarget.style.color = T.muted}>
+              <div>{label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Resources */}
+        <div>
+          <div style={{ fontFamily: 'Manrope', fontSize: 10, color: T.ink, letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Resources</div>
+          {[
+            ['Documentation', 'Opening docs.adastra.cloud'],
+            ['Release notes', 'v2.4 · DORA framework + 14 new rules'],
+            ['Security & trust', 'SOC 2 Type II · ISO 27001'],
+            ['API reference',  'OpenAPI 3.1 spec'],
+            ['Status page',    'All systems operational'],
+            ['Contact sales',  'sales@adastragrp.com'],
+          ].map(([label, sub]) => (
+            <button key={label} onClick={() => toast(label, { sub })} style={linkStyle}
+              onMouseEnter={e => e.currentTarget.style.color = T.red}
+              onMouseLeave={e => e.currentTarget.style.color = T.muted}>
+              <div>{label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Compliance badges */}
+        <div>
+          <div style={{ fontFamily: 'Manrope', fontSize: 10, color: T.ink, letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>Certifications</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+            {['SOC 2 Type II', 'ISO 27001', 'GDPR', 'HIPAA', 'PCI DSS', 'FedRAMP'].map(c => (
+              <div key={c} style={{
+                padding: '6px 8px', border: `1px solid ${T.rule}`, borderRadius: 4,
+                fontFamily: 'Manrope', fontSize: 10, color: T.ink2, fontWeight: 600,
+                textAlign: 'center', background: T.surface,
+              }}>{c}</div>
+            ))}
+          </div>
+          <div style={{
+            marginTop: 14, padding: '8px 10px', background: T.okSoft,
+            border: `1px solid #BFE3D2`, borderRadius: 4,
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.ok, animation: 'pulse 2s infinite' }} />
+            <span style={{ fontFamily: 'Manrope', fontSize: 10.5, color: T.ok, fontWeight: 600 }}>All systems operational</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom strip */}
+      <div style={{
+        borderTop: `1px solid ${T.ruleSoft}`, paddingTop: 18,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
+      }}>
+        <div style={{ fontFamily: 'Manrope', fontSize: 11, color: T.muted }}>
+          © {new Date().getFullYear()} <strong style={{ color: T.ink, fontWeight: 600 }}>Adastra Corporation</strong> · <span style={{ fontStyle: 'italic' }}>ad astra per aspera</span> — through hardships to the stars.
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {['Privacy', 'Terms', 'Cookies', 'Accessibility'].map(l => (
+            <button key={l} onClick={() => toast(`${l} policy opened`)} style={{
+              ...linkStyle, padding: 0, fontSize: 11,
+            }}
+              onMouseEnter={e => e.currentTarget.style.color = T.ink}
+              onMouseLeave={e => e.currentTarget.style.color = T.muted}>{l}</button>
+          ))}
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
 //  ROOT APP
 // ───────────────────────────────────────────────────────────
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppShell />
+    </ToastProvider>
+  );
+}
+
+function AppShell() {
+  const { toast } = useToast();
   const [page, setPage] = useState('dashboard');
 
   const titles = {
@@ -2242,18 +2863,49 @@ export default function App() {
             subtitle={subtitle}
             actions={
               <>
-                <button style={{ background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 4, padding: '8px 10px', cursor: 'pointer', color: T.ink2 }}>
-                  <Search size={15} />
+                <button onClick={() => toast('Search', { sub: 'Cmd+K to search anywhere' })} title="Search (Cmd+K)" style={{
+                  background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 6,
+                  padding: '8px 12px', cursor: 'pointer', color: T.ink2,
+                  display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'Manrope',
+                  fontSize: 12, transition: 'border 0.15s, background 0.15s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.ink2}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.rule}
+                >
+                  <Search size={14} />
+                  <span style={{ color: T.muted }}>Search</span>
+                  <kbd style={{
+                    fontFamily: 'Manrope', fontSize: 10, padding: '1px 5px', background: T.surface,
+                    border: `1px solid ${T.rule}`, borderRadius: 3, color: T.muted, fontWeight: 600,
+                  }}>⌘K</kbd>
                 </button>
-                <button style={{ background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 4, padding: '8px 10px', cursor: 'pointer', color: T.ink2, position: 'relative' }}>
+                <button onClick={() => toast('Notifications', { sub: '3 unread · 1 critical' })} title="Notifications" style={{
+                  background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 6,
+                  padding: '8px 10px', cursor: 'pointer', color: T.ink2, position: 'relative',
+                  transition: 'border 0.15s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.ink2}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.rule}
+                >
                   <Bell size={15} />
-                  <span style={{ position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%', background: T.red }} />
+                  <span style={{ position: 'absolute', top: 5, right: 5, width: 7, height: 7, borderRadius: '50%', background: T.red, boxShadow: '0 0 0 2px white' }} />
+                </button>
+                <button onClick={() => toast('Help center opened')} title="Help" style={{
+                  background: T.paper, border: `1px solid ${T.rule}`, borderRadius: 6,
+                  padding: '8px 10px', cursor: 'pointer', color: T.ink2,
+                  transition: 'border 0.15s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.ink2}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.rule}
+                >
+                  <Info size={15} />
                 </button>
               </>
             }
           />
         )}
         {pageContent}
+        <Footer goto={setPage} />
       </main>
     </div>
   );

@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // (e.g. GitHub Pages project sites, S3 subfolders, internal portals).
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/MyTrainingOSM/',
   build: {
     outDir: 'dist',
     sourcemap: false,
