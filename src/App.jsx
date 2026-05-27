@@ -47,43 +47,51 @@ const T = {
 };
 
 // ───────────────────────────────────────────────────────────
-//  ADASTRA LOGO — stylized wordmark with "to the stars" mark
+//  ADASTRA LOGO — official wordmark from adastra_logo_basic_red_RGB.ai
 // ───────────────────────────────────────────────────────────
-const AdastraLogo = ({ size = 28, color = T.ink, accent = T.red, withTag = false, tagColor }) => (
-  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, lineHeight: 1 }}>
-    {/* Star mark — "ad astra" = "to the stars" */}
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
-      <path
-        d="M16 2 L19.4 12.6 L30.4 12.6 L21.5 19.2 L24.9 29.8 L16 23.2 L7.1 29.8 L10.5 19.2 L1.6 12.6 L12.6 12.6 Z"
-        fill={accent}
-      />
-      <circle cx="16" cy="16" r="2.6" fill={color} />
-    </svg>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <span style={{
-        fontFamily: 'Instrument Serif, serif', fontSize: size * 0.95,
-        color, fontWeight: 400, letterSpacing: -0.5, lineHeight: 1,
-      }}>
-        ad<span style={{ color: accent, fontStyle: 'italic' }}>astra</span>
-      </span>
-      {withTag && (
-        <span style={{
-          fontFamily: 'Manrope, sans-serif', fontSize: 9, color: tagColor || T.muted,
-          letterSpacing: 2.5, fontWeight: 700, textTransform: 'uppercase',
-        }}>{withTag === true ? 'Audit Genie' : withTag}</span>
-      )}
-    </div>
-  </div>
+const AdastraWordmark = ({ height = 28, color = T.red, style = {} }) => (
+  <svg
+    height={height} viewBox="0 0 231.08 73.39"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="Adastra" role="img"
+    style={{ display: 'block', color, flexShrink: 0, ...style }}
+  >
+    <defs>
+      <clipPath id="adastra-clip">
+        <path transform="matrix(1,0,0,-1,0,73.39)" d="M0 73.39H231.08V0H0Z"/>
+      </clipPath>
+    </defs>
+    <g>
+      <path transform="matrix(1,0,0,-1,24.293,48.8105)" d="M0 0H4.333L7.731 8.09H3.397Z" fill="currentColor"/>
+      <path transform="matrix(1,0,0,-1,39.7603,32.6162)" d="M0 0-6.801-16.194H-2.467L4.333 0Z" fill="currentColor"/>
+      <path transform="matrix(1,0,0,-1,51.8271,24.5186)" d="M0 0-10.201-24.292H-5.868L4.333 0Z" fill="currentColor"/>
+      <g clipPath="url(#adastra-clip)">
+        <path transform="matrix(1,0,0,-1,78.417,44.8975)" d="M0 0H-4.745V16.401H0C5.056 16.401 8.358 12.921 8.358 8.166 8.358 3.411 5.056 0 0 0M0 20.261H-8.976V-3.859H0C7.566-3.859 12.795 1.412 12.795 8.235 12.795 15.057 7.566 20.261 0 20.261" fill="currentColor"/>
+        <path transform="matrix(1,0,0,-1,127.8613,34.7676)" d="M0 0C-4.609 1.103-5.71 1.93-5.71 3.825-5.71 5.444-4.265 6.719-1.789 6.719 .412 6.719 2.579 5.857 4.745 4.238L7.016 7.442C4.573 9.407 1.787 10.475-1.721 10.475-6.502 10.475-9.939 7.648-9.939 3.446-9.939-1.033-7.052-2.549-1.927-3.79 2.544-4.824 3.507-5.754 3.507-7.512 3.507-9.372 1.856-10.577-.758-10.577-3.75-10.577-6.054-9.441-8.358-7.442L-10.904-10.475C-8.015-13.06-4.541-14.333-.861-14.333 4.194-14.333 7.737-11.646 7.737-7.098 7.737-3.066 5.088-1.24 0 0" fill="currentColor"/>
+        <path transform="matrix(1,0,0,-1,137.6426,28.5654)" d="M0 0H7.636V-20.191H11.9V0H19.534V3.928H0Z" fill="currentColor"/>
+        <path transform="matrix(1,0,0,-1,164.7988,36.5928)" d="M0 0V8.097H6.156C9.286 8.097 11.143 6.718 11.143 4.064 11.143 1.585 9.218 0 6.191 0ZM15.441 4.305C15.441 9.027 12.037 11.956 6.5 11.956H-4.23V-12.164H0V-3.757H5.296L11.212-12.164H16.198L9.698-3.033C13.069-2.103 15.441 .309 15.441 4.305" fill="currentColor"/>
+        <path transform="matrix(1,0,0,-1,55.0713,29.6777)" d="M0 0 4.208-10.021H-4.209L-5.858-13.949H5.857L8.035-19.132H12.367L2.167 5.16Z" fill="currentColor"/>
+        <path transform="matrix(1,0,0,-1,98.9731,39.6982)" d="M0 0 4.208 10.02 8.417 0ZM2.041 15.18-8.159-9.112H-3.827L-1.649-3.929H10.065L12.243-9.112H16.576L6.375 15.18Z" fill="currentColor"/>
+        <path transform="matrix(1,0,0,-1,190.2109,39.6982)" d="M0 0 4.209 10.02 8.417 0ZM6.375 15.18H2.042L-8.159-9.112H-3.825L-1.648-3.929H10.066L12.243-9.112H16.576Z" fill="currentColor"/>
+      </g>
+    </g>
+  </svg>
 );
 
-// Compact logo — just the star mark
-const AdastraMark = ({ size = 20, color = T.red }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
-    <path
-      d="M16 2 L19.4 12.6 L30.4 12.6 L21.5 19.2 L24.9 29.8 L16 23.2 L7.1 29.8 L10.5 19.2 L1.6 12.6 L12.6 12.6 Z"
-      fill={color}
-    />
-  </svg>
+// Wrapper that pairs the official wordmark with an optional product tagline
+const AdastraLogo = ({ height = 26, color = T.red, withTag = false, tagColor, dividerColor }) => (
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, lineHeight: 1 }}>
+    <AdastraWordmark height={height} color={color} />
+    {withTag && (
+      <span style={{
+        fontFamily: 'Manrope, sans-serif', fontSize: 9.5,
+        color: tagColor || T.muted, letterSpacing: 2.5, fontWeight: 700,
+        textTransform: 'uppercase',
+        paddingLeft: 12,
+        borderLeft: `1px solid ${dividerColor || T.rule}`,
+      }}>{withTag === true ? 'Audit Genie' : withTag}</span>
+    )}
+  </div>
 );
 
 // ───────────────────────────────────────────────────────────
@@ -336,7 +344,7 @@ function Sidebar({ page, setPage }) {
           cursor: 'pointer', textAlign: 'left', width: '100%',
         }}
       >
-        <AdastraLogo size={26} withTag="Audit Genie" />
+        <AdastraLogo height={22} color={T.red} withTag="Audit Genie" />
       </button>
 
       {/* Nav */}
@@ -556,12 +564,12 @@ function Dashboard({ goto }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Brand line at top of hero */}
             <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <AdastraLogo size={22} color={T.paper} accent={T.red} />
+              <AdastraLogo height={22} color={T.paper} dividerColor="rgba(255,255,255,0.25)" tagColor="rgba(255,255,255,0.75)" withTag="Audit Genie" />
               <span style={{
                 padding: '2px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 3, fontSize: 9.5, color: T.paper, fontWeight: 700, fontFamily: 'Manrope',
                 letterSpacing: 1.5,
-              }}>AUDIT GENIE · v2.4</span>
+              }}>v2.4</span>
             </div>
             <div style={{
               fontSize: 10, letterSpacing: 2.5, color: T.red, fontWeight: 700,
@@ -592,17 +600,17 @@ function Dashboard({ goto }) {
               }}><Plus size={13} /> Launch new audit</button>
             </div>
           </div>
-          {/* Right side decorative — large mark */}
+          {/* Right side decorative — large faded wordmark */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            width: 120, height: 120, position: 'relative',
+            width: 200, position: 'relative',
           }}>
             <div style={{
-              position: 'absolute', inset: 0, borderRadius: '50%',
-              background: `radial-gradient(circle, ${T.red}44 0%, transparent 70%)`,
-              animation: 'pulse 3s ease-in-out infinite',
+              position: 'absolute', inset: '-20% -10%', borderRadius: '50%',
+              background: `radial-gradient(circle, ${T.red}33 0%, transparent 65%)`,
+              animation: 'pulse 3.5s ease-in-out infinite',
             }} />
-            <AdastraMark size={84} color={T.red} />
+            <AdastraWordmark height={56} color={T.red} style={{ position: 'relative', filter: 'drop-shadow(0 4px 20px rgba(226,35,26,0.45))' }} />
           </div>
         </div>
       </div>
@@ -2680,7 +2688,7 @@ function Footer({ goto }) {
       }}>
         {/* Brand column */}
         <div>
-          <AdastraLogo size={24} withTag="Audit Genie" />
+          <AdastraLogo height={22} color={T.red} withTag="Audit Genie" />
           <p style={{
             fontFamily: 'Manrope', fontSize: 12, color: T.ink3, lineHeight: 1.6,
             marginTop: 14, maxWidth: 260,
@@ -2780,7 +2788,7 @@ function Footer({ goto }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ fontFamily: 'Manrope', fontSize: 11, color: T.muted }}>
-          © {new Date().getFullYear()} <strong style={{ color: T.ink, fontWeight: 600 }}>Adastra Corporation</strong> · <span style={{ fontStyle: 'italic' }}>ad astra per aspera</span> — through hardships to the stars.
+          © {new Date().getFullYear()} <strong style={{ color: T.ink, fontWeight: 600 }}>Adastra Corporation</strong> — Audit Genie · All rights reserved.
         </div>
         <div style={{ display: 'flex', gap: 16 }}>
           {['Privacy', 'Terms', 'Cookies', 'Accessibility'].map(l => (
